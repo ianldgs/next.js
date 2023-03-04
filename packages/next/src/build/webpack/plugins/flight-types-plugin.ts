@@ -16,14 +16,14 @@ interface Options {
 
 function createTypeGuardFile(
   fullPath: string,
-  relativePath: string,
+  importPath: string,
   options: {
     type: 'layout' | 'page'
     slots?: string[]
   }
 ) {
   return `// File: ${fullPath}
-import * as entry from '${relativePath}'
+import * as entry from '${importPath}'
 type TEntry = typeof entry
 
 check<IEntry, TEntry>(entry)
@@ -130,35 +130,43 @@ export class FlightTypesPlugin {
       const IS_LAYOUT = /[/\\]layout\.[^./\\]+$/.test(mod.resource)
       const IS_PAGE = !IS_LAYOUT && /[/\\]page\.[^.]+$/.test(mod.resource)
       const relativePathToApp = path.relative(this.appDir, mod.resource)
-      const relativePathToRoot = path.relative(this.dir, mod.resource)
+      // const relativePathToRoot = path.relative(this.dir, mod.resource)
 
       const typePath = path.join(
         'types',
         'app',
         relativePathToApp.replace(/\.(js|jsx|ts|tsx|mjs)$/, '.ts')
       )
-      const relativeImportPath = path
-        .join(
-          distDirRelative,
-          path.relative(typePath, ''),
-          relativePathToRoot.replace(/\.(js|jsx|ts|tsx|mjs)$/, '')
-        )
-        .replace(/\\/g, '/')
+      // const relativeImportPath = path
+      //   .join(
+      //     distDirRelative,
+      //     path.relative(typePath, ''),
+      //     relativePathToRoot.replace(/\.(js|jsx|ts|tsx|mjs)$/, '')
+      //   )
+      //   .replace(/\\/g, '/')
       const assetPath = assetDirRelative + '/' + typePath.replace(/\\/g, '/')
 
       if (IS_LAYOUT) {
         const slots = await collectNamedSlots(mod.resource)
         assets[assetPath] = new sources.RawSource(
-          createTypeGuardFile(mod.resource, relativeImportPath, {
-            type: 'layout',
-            slots,
-          })
+          createTypeGuardFile(
+            mod.resource,
+            mod.resource.replace(/\.(js|jsx|ts|tsx|mjs)$/, ''),
+            {
+              type: 'layout',
+              slots,
+            }
+          )
         ) as unknown as webpack.sources.RawSource
       } else if (IS_PAGE) {
         assets[assetPath] = new sources.RawSource(
-          createTypeGuardFile(mod.resource, relativeImportPath, {
-            type: 'page',
-          })
+          createTypeGuardFile(
+            mod.resource,
+            mod.resource.replace(/\.(js|jsx|ts|tsx|mjs)$/, ''),
+            {
+              type: 'page',
+            }
+          )
         ) as unknown as webpack.sources.RawSource
       }
     }
