@@ -1,6 +1,6 @@
 {
-  "name": "next",
-  "version": "13.1.6",
+  "name": "@ian-patches/next",
+  "version": "13.1.6-patch-1",
   "description": "The React Framework",
   "main": "./dist/server/next.js",
   "license": "MIT",
