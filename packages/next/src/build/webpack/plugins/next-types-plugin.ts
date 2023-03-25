@@ -35,14 +35,14 @@ interface Options {
 
 function createTypeGuardFile(
   fullPath: string,
-  relativePath: string,
+  importPath: string,
   options: {
     type: 'layout' | 'page'
     slots?: string[]
   }
 ) {
   return `// File: ${fullPath}
-import * as entry from '${relativePath}'
+import * as entry from '${importPath}'
 import type { ResolvingMetadata } from 'next/dist/lib/metadata/types/metadata-interface'
 
 type TEntry = typeof entry
@@ -393,9 +393,6 @@ export class NextTypesPlugin {
   }
 
   apply(compiler: webpack.Compiler) {
-    // From dist root to project root
-    const distDirRelative = path.relative(this.distDir + '/..', '.')
-
     // From asset root to dist root
     const assetDirRelative = this.dev
       ? '..'
@@ -422,7 +419,6 @@ export class NextTypesPlugin {
       const IS_LAYOUT = /[/\\]layout\.[^./\\]+$/.test(mod.resource)
       const IS_PAGE = !IS_LAYOUT && /[/\\]page\.[^.]+$/.test(mod.resource)
       const relativePathToApp = path.relative(this.appDir, mod.resource)
-      const relativePathToRoot = path.relative(this.dir, mod.resource)
 
       if (!this.dev) {
         if (IS_PAGE) {
@@ -435,26 +431,20 @@ export class NextTypesPlugin {
         'app',
         relativePathToApp.replace(/\.(js|jsx|ts|tsx|mjs)$/, '.ts')
       )
-      const relativeImportPath = path
-        .join(
-          distDirRelative,
-          path.relative(typePath, ''),
-          relativePathToRoot.replace(/\.(js|jsx|ts|tsx|mjs)$/, '')
-        )
-        .replace(/\\/g, '/')
+      const importPath = mod.resource.replace(/\.(js|jsx|ts|tsx|mjs)$/, '')
       const assetPath = assetDirRelative + '/' + typePath.replace(/\\/g, '/')
 
       if (IS_LAYOUT) {
         const slots = await collectNamedSlots(mod.resource)
         assets[assetPath] = new sources.RawSource(
-          createTypeGuardFile(mod.resource, relativeImportPath, {
+          createTypeGuardFile(mod.resource, importPath, {
             type: 'layout',
             slots,
           })
         )
       } else if (IS_PAGE) {
         assets[assetPath] = new sources.RawSource(
-          createTypeGuardFile(mod.resource, relativeImportPath, {
+          createTypeGuardFile(mod.resource, importPath, {
             type: 'page',
           })
         )
